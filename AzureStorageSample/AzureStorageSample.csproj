@@ -71,6 +71,8 @@
     <Compile Include="PhotoActivity.cs" />
     <Compile Include="BlobFilesAdapter.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="FileSharedAdapter.cs" />
+    <Compile Include="FileActivity.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AboutResources.txt" />

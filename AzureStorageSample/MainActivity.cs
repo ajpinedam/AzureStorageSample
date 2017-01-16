@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using Android.Content;
+using Microsoft.WindowsAzure.Storage.File;
 
 namespace AzureStorageSample
 {
@@ -16,9 +17,11 @@ namespace AzureStorageSample
     {
         public static readonly string PHOTO_NAME = "PHOTO_NAME";
 
-        IList<string> _items = new List<string>();
+        BlobFilesAdapter _blobItemsAdapter;
 
-        BlobFilesAdapter _itemsAdapter;
+        FileSharedAdapter _fileItemsAdapter;
+
+        bool isPhoto;
 
         protected override void OnCreate (Bundle savedInstanceState)
         {
@@ -29,27 +32,37 @@ namespace AzureStorageSample
 
             // Get our button from the layout resource,
             // and attach an event to it
-            Button button = FindViewById<Button> (Resource.Id.myButton);
+            var getImagesButton = FindViewById<Button> (Resource.Id.imageButton);
+
+            var getFilesButton = FindViewById<Button> (Resource.Id.fileButton);
 
             var listView = FindViewById<ListView> (Resource.Id.storageListView);
 
-            _itemsAdapter = new BlobFilesAdapter (this, _items);
-
-            listView.Adapter = _itemsAdapter;
-
             listView.ItemClick += (sender, e) => {
 
-                var intent = new Intent (this, typeof (PhotoActivity));
+                if (isPhoto)
+                {
+                    var intent = new Intent (this, typeof (PhotoActivity));
 
-                intent.PutExtra (PHOTO_NAME, _itemsAdapter [e.Position]);
+                    intent.PutExtra (PHOTO_NAME, _blobItemsAdapter [e.Position]);
 
-                StartActivity (intent);
+                    StartActivity (intent);
+                }
             };
 
-            button.Click += async (sender, e) => {
-                _items = await GetBlobInContainer (Settings.ImageContainer);
-                _itemsAdapter.ReplaceItems (_items);
-                _itemsAdapter.NotifyDataSetChanged ();
+            getImagesButton.Click += async (sender, e) => {
+                isPhoto = true;
+                var images = await GetBlobInContainer (Settings.ImageContainer);
+
+                _blobItemsAdapter= new BlobFilesAdapter (this, images);
+                listView.Adapter = _blobItemsAdapter;
+            };
+
+            getFilesButton.Click += async (sender, e) => { 
+                isPhoto = false;
+                var files = await GetResourceFiles (Settings.FileStorageName);
+
+                listView.Adapter = _fileItemsAdapter = new FileSharedAdapter (this, files);                
             };
         }
 
@@ -85,6 +98,61 @@ namespace AzureStorageSample
 
 
             return fileName.ToArray();
+        }
+
+        /// <summary>
+        /// Gets files name in an Azure shared file storage
+        /// </summary>
+        /// <param name="fileStorageName">File storage name. Como fue llamado en Azure</param>
+        /// <returns>An array with the files name</returns>
+        async Task<string []> GetResourceFiles (string fileStorageName)
+        {
+            FileContinuationToken continuationToken = null;
+
+            var fileName = new List<string> ();
+
+            var storageInstance = CloudStorageAccount.Parse (Settings.AzureKey);
+
+            var fileClient = storageInstance.CreateCloudFileClient ();
+
+            var share = fileClient.GetShareReference (fileStorageName);
+
+
+            if (!await share.ExistsAsync ())
+            {
+                return fileName.ToArray();
+            }
+
+            var root = share.GetRootDirectoryReference ();
+
+            var myFiles = root.GetDirectoryReference ("MyFiles");
+
+            if (!await myFiles.ExistsAsync ())
+            {
+                return fileName.ToArray ();
+            }
+
+            do
+            {
+
+                var files = await myFiles.ListFilesAndDirectoriesSegmentedAsync (continuationToken);
+
+                var uris = files.Results.Select (a => a.Uri);
+
+                continuationToken = files.ContinuationToken;
+
+                foreach (var item in uris)
+                {
+                    var name = Path.GetFileName (item.AbsolutePath);
+
+                    fileName.Add (name);
+                }
+
+
+            } while (continuationToken != null);
+
+
+            return fileName.ToArray ();
         }
 
     }
