@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="hello">Hello World, Click Me!</string>
+	<string name="upload_button">Get File List</string>
+	<string name="image_download_error_dialog_msg">Ocurrio un error descargando la imagen.</string>
+	<string name="image_download_error_dialog_title">Error en descarga</string>
+	<string name="image_download_error_dialog_ok">Ok entiendo</string>
+	<string name="app_name">AzureStorageSample</string>
+	
+</resources>
