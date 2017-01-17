@@ -15,13 +15,19 @@ namespace AzureStorageSample
     [Activity (Label = "AzureStorageSample", MainLauncher = true, Icon = "@mipmap/icon")]
     public class MainActivity : Activity
     {
-        public static readonly string PHOTO_NAME = "PHOTO_NAME";
+        internal static readonly string PHOTO_NAME = "PHOTO_NAME";
+
+        internal static readonly string FILE_NAME = "FILE_NAME";
+
+        internal static readonly string DIRECTORY_NAME = "DIRECTORY_NAME";
 
         BlobFilesAdapter _blobItemsAdapter;
 
         FileSharedAdapter _fileItemsAdapter;
 
         bool isPhoto;
+
+        readonly string UserDirectoryName = "MyFiles";
 
         protected override void OnCreate (Bundle savedInstanceState)
         {
@@ -45,6 +51,15 @@ namespace AzureStorageSample
                     var intent = new Intent (this, typeof (PhotoActivity));
 
                     intent.PutExtra (PHOTO_NAME, _blobItemsAdapter [e.Position]);
+
+                    StartActivity (intent);
+                }
+                else
+                { 
+                    var intent = new Intent (this, typeof (FileActivity));
+
+                    intent.PutExtra (FILE_NAME, _fileItemsAdapter [e.Position]);
+                    intent.PutExtra (DIRECTORY_NAME, UserDirectoryName);
 
                     StartActivity (intent);
                 }
@@ -125,7 +140,7 @@ namespace AzureStorageSample
 
             var root = share.GetRootDirectoryReference ();
 
-            var myFiles = root.GetDirectoryReference ("MyFiles");
+            var myFiles = root.GetDirectoryReference (UserDirectoryName);
 
             if (!await myFiles.ExistsAsync ())
             {
